@@ -55,75 +55,108 @@ let server = http.createServer(function (req, res) {
     res.setHeader("Access-Control-Allow-Headers", "X-Requested-With");
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
-        console.log('server  收到客户端的请求数量', req.url, req.method, i++);
-        if (req.url === "/" && req.method === "GET") {
-            //显示主页
-            res.setHeader('Content-Type', 'text/html;charset=UTF-8')
-            let content = fs.readFileSync("./index.html");
-            res.write(content);
-            res.end();
-        } else if (req.url === "/Images" && req.method === "POST") {
-            //上传文件
-            let ip = req.headers['x-forwarded-for'] || req.ip || req.connection.remoteAddress || req.socket.remoteAddress || '';
-            if(ip.split(',').length>0){
-                ip = ip.split(',')[0]
+    console.log('server  收到客户端的请求数量', req.url, req.method, i++);
+    if (req.url === "/" && req.method === "GET") {
+        //显示主页
+        res.setHeader('Content-Type', 'text/html;charset=UTF-8')
+        let content = fs.readFileSync("./index.html");
+        res.write(content);
+        res.end();
+    } else if (req.url === "/Images" && req.method === "POST") {
+        //上传文件
+        let files = [];
+        let ip = req.headers['x-forwarded-for'] || req.ip || req.connection.remoteAddress || req.socket.remoteAddress || '';
+        if (ip.split(',').length > 0) {
+            ip = ip.split(',')[0]
+        }
+        console.log('访问者ip', ip);
+        var form = new formidable.IncomingForm();
+        form.multiples = true; //q启用多文件上传
+        form.maxFileSize = 1 * 1024 * 1024 * 1024; //限制上传最大文件为4GB
+        form.on('file', function (filed, file) {
+            files.push([filed, file]);
+        }).parse(req, function (err, fields, files) {
+            // console.log("fields", fields);
+            //console.log("files", files);
+            if (err) {
+                console.log("err" + err.message);
+                return;
             }
-            console.log('访问者ip',ip);
-            var form = new formidable.IncomingForm();
-            form.maxFileSize = 1024*1024*1024;
-            form.parse(req, function (err, fields, files) {
-                // console.log("fields", fields);
-                // console.log("files", files);
-                let filename = files.files.name;
+            let filesArray = files.files;
+            let filesnum = files.files.length;
+            //console.log("filesArray", filesArray);
+            //console.log("filesnum", filesnum);
+            if (Object.prototype.toString.call(files.files) === '[object Object]') {
+                console.log('上传的是单文件');
+                let filesname = files.files.name;
                 let filesize = files.files.size;
-                if(!/\.exe$|\.apk$/gim.test(filename)){
-                   return res.end("非法类型的文件");
-                } else if(/%|#/g.test(filename)){
-                   return res.end("非法的文件名");
-                } else if (filesize > 1024*1024*1024) {
-                    return res.end("文件大小超过1GB");
+                if (!/\.exe$|\.apk$/gim.test(filesname)) {
+                    return res.end("非法类型的文件");
+                } else if (/%|#/g.test(filesname)) {
+                    return res.end("非法的文件名");
+                } else if (filesize > 1 * 1024 * 1024 * 1024) {
+                    return res.end('文件大小超过1GB');
                 }
                 res.writeHead(200, {
-                    'content-type': 'text/plain'
+                    'content-type': 'application/octet-stream'
                 });
                 res.write('received upload:\n\n');
                 console.log("files", files.files.path);
                 let readStream = fs.createReadStream(files.files.path);
-                let writeStream = fs.createWriteStream("Images/" + files.files.name);
+                let writeStream = fs.createWriteStream("Images/" + filesname);
                 readStream.pipe(writeStream);
                 readStream.on('end', function () {
                     fs.unlinkSync(files.files.path);
                 });
-                res.end(util.inspect({
-                    fields: fields,
-                    files: files
-                }));
-            });
-            return;
-        } else if (req.url === "/list" && req.method === "GET") {
-            //响应ajax
-            let content = fs.readdirSync(path.join(__dirname, "Images"));
-            console.log("server  反馈给ajax的请求", content.length);
-            res.write(content.toString());
+            } else {
+                console.log('上传的是多文件');
+                for (let i = 0; i < filesnum; i++) {
+                    if (!/\.exe$|\.apk$/gim.test(filesArray[i].name)) {
+                        return res.end("非法类型的文件");
+                    } else if (/%|#/g.test(filesArray[i].name)) {
+                        return res.end("非法的文件名");
+                    } else if (filesArray[i].size > 1 * 1024 * 1024 * 1024) {
+                        return res.end('文件大小超过1GB');
+                    }
+                    res.write('received upload:\n\n');
+                    console.log("files", files.files[i].path);
+                    let readStream = fs.createReadStream(files.files[i].path);
+                    let writeStream = fs.createWriteStream("Images/" + filesArray[i].name);
+                    readStream.pipe(writeStream);
+                    readStream.on('end', function () {
+                        fs.unlinkSync(files.files[i].path);
+                    });
+                }
+            }
+            res.end(util.inspect({
+                fields: fields,
+                files: files
+            }));
+        });
+    } else if (req.url === "/list" && req.method === "GET") {
+        //响应ajax
+        let content = fs.readdirSync(path.join(__dirname, "Images"));
+        console.log("server  反馈给ajax的请求", content.length);
+        res.write(content.toString());
+        res.end();
+    } else if (/delete/.test(req.url)) {
+        res.setHeader('Content-Type', 'text/plain;charset=UTF-8');
+        let pathname = url.parse(req.url).pathname;
+        filename = decodeURIComponent(pathname).split("/")[decodeURIComponent(pathname).split("/").length - 1];
+        //let delpathfile = path.join(__dirname,`Images/${filename}`)
+        console.log("server delete filename", filename);
+        //console.log("delpathfile",delpathfile);
+        fs.unlink(`./Images/${filename}`, function (err) {
+            if (err) throw err;
+            console.log(`${filename}删除成功!`);
             res.end();
-        } else if(/delete/.test(req.url)){
-            res.setHeader('Content-Type', 'text/plain;charset=UTF-8');
-            let pathname = url.parse(req.url).pathname; 
-            filename = decodeURIComponent(pathname).split("/")[decodeURIComponent(pathname).split("/").length-1];
-            //let delpathfile = path.join(__dirname,`Images/${filename}`)
-            console.log("server delete filename",filename);
-            //console.log("delpathfile",delpathfile);
-            fs.unlink(`./Images/${filename}`,function(err){
-                if (err) throw err;
-                console.log(`${filename}删除成功!`);
-                res.end();
-            });
-        } else {
-            //静态文件部署
-            console.log("server  处理静态文件");
-            const _render = new Render(req, res);
-            _render.init();
-        }
+        });
+    } else {
+        //静态文件部署
+        console.log("server  处理静态文件");
+        const _render = new Render(req, res);
+        _render.init();
+    }
 });
 
 server.listen({
