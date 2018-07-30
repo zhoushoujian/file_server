@@ -1,0 +1,232 @@
+﻿<!DOCTYPE html>
+
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <title>NODEJS 文件服务器</title>
+    <meta HTTP-EQUIV="pragma" CONTENT="no-cache">
+    <META HTTP-EQUIV="Cache-Control" CONTENT="no-cache">
+    <meta HTTP-EQUIV="expires" CONTENT="Wed, 26 Feb 1997 08:21:57 GMT">
+    <meta HTTP-EQUIV="expires" CONTENT="-1">
+    <meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1,user-scalable=no">
+
+    <style>
+        h2 {
+            display: inline-block;
+            margin-left: 100px;
+        }
+
+        form {
+            display: inline-block;
+        }
+
+        #container {
+            display: block;
+            margin-left: 100px;
+            margin-top: 20px;
+        }
+
+        a {
+            display: inline-block;
+        }
+
+        a:hover {
+            color: red;
+        }
+
+        span {
+            color: #f00;
+            text-decoration: underline;
+            margin-left: 5px;
+            cursor: pointer
+        }
+
+        .file {
+            font-size: 20px;
+            margin-top: 10px;
+        }
+
+        #frmUploader {
+            margin-left: 100px;
+            margin-top: 25px;
+        }
+
+        #progressNumber {
+            display: inline-block;
+            margin-left: 5px;
+            height: 21px;
+            line-height: 21px;
+        }
+
+        .tips {
+            margin: 15px 0 0 100px;
+            font-weight: bold;
+            color: #f00;
+        }
+
+        .button {
+            padding-left: 100px;
+        }
+
+        #btn1 {
+            margin-right: 50px;
+        }
+
+        #btn2 {
+            margin-right: 50px;
+        }
+
+        #progress {
+            display: inline-block;
+        }
+    </style>
+    <script src="./fileServer/axios.js"></script>
+    <script>
+        function upload() { //进行文件类型的校验
+            let filename, filesize;
+            let files = document.getElementById('fileToUpload').files;
+            let fileNum = document.getElementById('fileToUpload').files.length;
+            //console.log('fileNum', fileNum);
+
+            for (let i = 0; i < fileNum; i++) {
+                filename = document.getElementById('fileToUpload').files[i].name;
+                filesize = document.getElementById('fileToUpload').files[i].size;
+                
+                if (!/\.exe$|\.apk$/gi.test(filename)) {
+                    alert("不允许上传后缀名除exe|EXE|apk|APK以外的文件");
+                    return
+                } else if (/#|%/g.test(filename)) {
+                    alert("文件名不能包含%或#");
+                    return
+                } else if (filesize > 1024*1024*1024) {
+                    alert('文件大小超过1GB');
+                    return
+                }
+                document.getElementById('btnSubmit').value = "上传中";
+
+                var formData = new FormData();
+                if (fileNum > 0) {
+                    //formData.append("files",files[0]);
+                    for (let i = 0; i < fileNum; i++) {　　　　　　　　　　　　
+                        formData.append('files', files[i]);
+                    }
+                    var xhr = new XMLHttpRequest();
+                    xhr.upload.addEventListener("progress", uploadProgress, false);
+                    xhr.addEventListener("error", uploadFailed, false);
+                    xhr.open('POST', '/Images');
+                    xhr.onreadystatechange = function () {
+                        if (xhr.readyState == 4 && xhr.status == 200) {
+                            console.log('上传成功' + xhr.responseText);
+                            if (xhr.responseText === "非法类型的文件") {
+                                alert('非法类型的文件');
+                                window.location.reload();
+                            } else if (xhr.responseText === "非法的文件名") {
+                                alert('非法的文件名');
+                                window.location.reload();
+                            } else if (xhr.responseText === "文件大小超过1GB"){
+                                alert('文件大小超过1GB');
+                                window.location.reload();
+                            } else {
+                                alert('上传成功！')
+                                window.location.reload();
+                            }
+                        }
+                    };
+                    xhr.send(formData);
+                }
+            }
+        }
+
+        function uploadProgress(evt) {
+            if (evt.lengthComputable) {
+                var percentComplete = Math.round(evt.loaded * 100 / evt.total);
+                console.log("上传进度", percentComplete)
+                document.getElementById('progress').innerHTML = percentComplete.toString() + '%';
+            } else {
+                document.getElementById('progress').innerHTML = 'unable to compute';
+            }
+        }
+
+        function uploadFailed(evt) {
+            alert("上传失败");
+        }
+
+
+        axios.get('http://192.168.1.101:2000/list') //获取文件列表数据
+            .then(function (response) {
+                if (!response.request.responseText) return;
+                let array = response.request.responseText.split(",");
+                let length = array.length;
+                console.log("页面存在的文件数量", length);
+                for (let i = 0; i < length; i++) {
+                    let para = document.createElement("a");
+                    let del = document.createElement("span");
+                    let br = document.createElement("br");
+                    let nodeText = document.createTextNode(array[i]);
+                    let delText = document.createTextNode("删除")
+                    para.setAttribute("title", array[i]);
+                    para.setAttribute("href", `./Images/${array[i]}`);
+                    para.setAttribute("class", "file");
+                    del.setAttribute('href', `javascript:deleteFile(${array[i]})`)
+                    para.appendChild(nodeText);
+                    del.appendChild(delText);
+                    let outter = document.getElementById("container");
+                    outter.appendChild(para);
+                    outter.appendChild(del);
+                    outter.appendChild(br);
+                }
+                console.log("获取文件列表的响应", response);
+            })
+            .then(function () {
+                let spans = document.getElementsByTagName('span')
+                let as = document.getElementsByTagName('a')
+                let spansLength = spans.length;
+                for (let i = 0; i < spansLength; i++) {
+                    spans[i].addEventListener('click', function () {
+                        console.log((`http://127.0.0.1:2000/delete/${as[i].innerHTML}`))
+                        if (window.confirm("确定要删除吗?")) {
+                            axios.get(encodeURIComponent(
+                                    `http://127.0.0.1:2000/delete/${as[i].innerHTML}`))
+                                .then(response => {
+                                    console.log("删除文件的响应", response);
+                                    alert("删除成功!");
+                                    location.reload();
+                                })
+                                .catch(error => {
+                                    console.log("删除文件过程中发生了错误", error)
+                                })
+                            console.log(`http://127.0.0.1:2000/delete/${as[i].innerHTML.substring(2)}`)
+                        }
+                    })
+                }
+            })
+            .catch(function (error) {
+                console.log("发生了错误", error);
+            })
+
+        function openFolder() {
+            window.location.href = 'http://192.168.1.101:2000/Images';
+            window.open(filepath,'_self');
+        }
+    </script>
+</head>
+
+<body>
+
+    <h2 class='head'> 文件列表 </h2>
+
+    <input type="file" id="fileToUpload" name="fileUploader" />
+    <input type="button" name="submit" id="btnSubmit" value="上传" onclick="upload()" />
+    <div id='progress'></div>
+
+    <div class="button">
+        <input type="button" id="btn1" value="文件目录" onClick="openFolder()" />
+    </div>
+    <!-- <div class="tips">严禁同时上传超过9个文件！</div> -->
+
+    <div id="container"></div>
+
+</body>
+
+</html>
