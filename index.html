@@ -88,13 +88,13 @@
             let files = document.getElementById('fileToUpload').files;
             let fileNum = document.getElementById('fileToUpload').files.length;
             //console.log('fileNum', fileNum);
-
-            for (let i = 0; i < fileNum; i++) {
+            let i=0
+            function submit(){
                 filename = document.getElementById('fileToUpload').files[i].name;
                 filesize = document.getElementById('fileToUpload').files[i].size;
                 
                 if (!/\.exe$|\.apk$/gi.test(filename)) {
-                    alert("不允许上传后缀名除exe|EXE|apk|APK以外的文件");
+                    alert("不允许上传后缀名除exe|apk以外的文件");
                     return
                 } else if (/#|%/g.test(filename)) {
                     alert("文件名不能包含%或#");
@@ -105,12 +105,8 @@
                 }
                 document.getElementById('btnSubmit').value = "上传中";
 
-                var formData = new FormData();
-                if (fileNum > 0) {
-                    //formData.append("files",files[0]);
-                    for (let i = 0; i < fileNum; i++) {　　　　　　　　　　　　
-                        formData.append('files', files[i]);
-                    }
+                var formData = new FormData();　　　　　　　　　　
+                    formData.append('files', files[i]);
                     var xhr = new XMLHttpRequest();
                     xhr.upload.addEventListener("progress", uploadProgress, false);
                     xhr.addEventListener("error", uploadFailed, false);
@@ -129,13 +125,18 @@
                                 window.location.reload();
                             } else {
                                 alert('上传成功！')
-                                window.location.reload();
+                                i++
+                                if(i>=fileNum){
+                                    window.location.reload();
+                                    return;
+                                }
+                                submit();
                             }
                         }
                     };
                     xhr.send(formData);
                 }
-            }
+                submit()
         }
 
         function uploadProgress(evt) {
@@ -190,6 +191,11 @@
                                     `http://127.0.0.1:2000/delete/${as[i].innerHTML}`))
                                 .then(response => {
                                     console.log("删除文件的响应", response);
+                                    if(response.request.responseText === '文件已删除'){
+                                        alert("文件已删除!");
+                                        location.reload();
+                                        return;
+                                    }
                                     alert("删除成功!");
                                     location.reload();
                                 })

@@ -65,11 +65,6 @@ let server = http.createServer(function (req, res) {
     } else if (req.url === "/Images" && req.method === "POST") {
         //上传文件
         let files = [];
-        let ip = req.headers['x-forwarded-for'] || req.ip || req.connection.remoteAddress || req.socket.remoteAddress || '';
-        if (ip.split(',').length > 0) {
-            ip = ip.split(',')[0]
-        }
-        console.log('访问者ip', ip);
         var form = new formidable.IncomingForm();
         form.multiples = true; //q启用多文件上传
         form.maxFileSize = 1 * 1024 * 1024 * 1024; //限制上传最大文件为4GB
@@ -84,12 +79,10 @@ let server = http.createServer(function (req, res) {
             }
             let filesArray = files.files;
             let filesnum = files.files.length;
-            //console.log("filesArray", filesArray);
-            //console.log("filesnum", filesnum);
             if (Object.prototype.toString.call(files.files) === '[object Object]') {
-                console.log('上传的是单文件');
                 let filesname = files.files.name;
                 let filesize = files.files.size;
+                console.log('上传的是单文件',filesname);
                 if (!/\.exe$|\.apk$/gim.test(filesname)) {
                     return res.end("非法类型的文件");
                 } else if (/%|#/g.test(filesname)) {
@@ -101,7 +94,7 @@ let server = http.createServer(function (req, res) {
                     'content-type': 'application/octet-stream'
                 });
                 res.write('received upload:\n\n');
-                console.log("files", files.files.path);
+                //console.log("files", files.files.path);
                 let readStream = fs.createReadStream(files.files.path);
                 let writeStream = fs.createWriteStream("Images/" + filesname);
                 readStream.pipe(writeStream);
@@ -111,6 +104,7 @@ let server = http.createServer(function (req, res) {
             } else {
                 console.log('上传的是多文件');
                 for (let i = 0; i < filesnum; i++) {
+                    console.log("上传的文件名",filesArray[i].name);
                     if (!/\.exe$|\.apk$/gim.test(filesArray[i].name)) {
                         return res.end("非法类型的文件");
                     } else if (/%|#/g.test(filesArray[i].name)) {
@@ -135,6 +129,12 @@ let server = http.createServer(function (req, res) {
         });
     } else if (req.url === "/list" && req.method === "GET") {
         //响应ajax
+        let ip = req.headers['x-forwarded-for'] || req.ip || req.connection.remoteAddress || req.socket.remoteAddress || '';
+        if (ip.split(',').length > 0) {
+            ip = ip.split(',')[0]
+        }
+        let time = new Date();
+        console.log(`${time}  访问者ip`, ip);
         let content = fs.readdirSync(path.join(__dirname, "Images"));
         console.log("server  反馈给ajax的请求", content.length);
         res.write(content.toString());
@@ -143,14 +143,16 @@ let server = http.createServer(function (req, res) {
         res.setHeader('Content-Type', 'text/plain;charset=UTF-8');
         let pathname = url.parse(req.url).pathname;
         filename = decodeURIComponent(pathname).split("/")[decodeURIComponent(pathname).split("/").length - 1];
-        //let delpathfile = path.join(__dirname,`Images/${filename}`)
         console.log("server delete filename", filename);
-        //console.log("delpathfile",delpathfile);
-        fs.unlink(`./Images/${filename}`, function (err) {
-            if (err) throw err;
-            console.log(`${filename}删除成功!`);
-            res.end();
-        });
+        if(fs.existsSync(`./Images/${filename}`)){
+            fs.unlink(`./Images/${filename}`, function (err) {
+                if (err) throw err;
+                console.log(`${filename}删除成功!`);
+                res.end();
+            });
+        } else {
+            res.end('文件已删除');
+        }
     } else {
         //静态文件部署
         console.log("server  处理静态文件");
