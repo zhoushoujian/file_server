@@ -89,7 +89,8 @@
             let fileNum = document.getElementById('fileToUpload').files.length;
             //console.log('fileNum', fileNum);
             let i=0
-            function submit(){
+            if(fileNum){
+                function submit(){
                 filename = document.getElementById('fileToUpload').files[i].name;
                 filesize = document.getElementById('fileToUpload').files[i].size;
                 
@@ -137,6 +138,7 @@
                     xhr.send(formData);
                 }
                 submit()
+            }
         }
 
         function uploadProgress(evt) {
