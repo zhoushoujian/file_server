@@ -23,7 +23,6 @@ if (IS_RUNNING_AS_SERVER && cluster.isMaster) {
     }();
 }
 
-require("colors");
 let fs = require("fs"),
     url = require('url'),
     path = require("path"),
@@ -68,7 +67,7 @@ let server = http.createServer(function (req, res) {
         var files = [];
         var form = new formidable.IncomingForm();
         form.multiples = true; //q启用多文件上传
-        form.maxFileSize = 1 * 1024 * 1024 * 1024; //限制上传最大文件为4GB
+        form.maxFileSize = 1 * 1024 * 1024 * 1024; //限制上传最大文件为1GB
         form.on('file', function (filed, file) {
             files.push([filed, file]);
         }).parse(req, function (err, fields, files) {

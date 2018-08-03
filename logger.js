@@ -2,7 +2,7 @@
  * @Author: zwx492293 
  * @Date: 2018-04-16 20:13:31 
  * @Last Modified by: zhoushoujian
- * @Last Modified time: 2018-08-01 23:09:14
+ * @Last Modified time: 2018-08-03 22:24:55
  * @用法:在任何一个脚本里都可以直接引用，
  *       生成的log文件存放在C:\Program Files (x86)\CloudLink\log文件夹下
  *       当文件大小超过1M，文件自动分片，用法如下:
@@ -11,33 +11,35 @@
  *       logger.warn("warn",null,[4,5,6])                      //[2018-4-18 09:50:07.358][WARN][ACTION] warn  [ext] null,[4,5,6]
  *       logger.error("error","123","456")                     //[2018-4-18 09:50:07.358][ERROR][ACTION] error  [ext] "123","456"
  */
-let fs = require('fs')
-let path = require('path')
-let colors = require('colors')
-let os = require('os')
-let year = new Date().getFullYear()
-let month = new Date().getMonth() + 1
-let day = new Date().getDate()
-let hour = new Date().getHours()
-let minute = new Date().getMinutes()
-let second = new Date().getSeconds()
-let mileSecond = new Date().getMilliseconds()
-if (hour < 10) {
-    hour = "0" + hour
+let fs = require('fs');
+require('colors');
+let time;
+function getTime (){
+    let year = new Date().getFullYear();
+    let month = new Date().getMonth() + 1;
+    let day = new Date().getDate();
+    let hour = new Date().getHours();
+    let minute = new Date().getMinutes();
+    let second = new Date().getSeconds();
+    let mileSecond = new Date().getMilliseconds();
+    if (hour < 10) {
+        hour = "0" + hour
+    }
+    if (minute < 10) {
+        minute = "0" + minute
+    }
+    if (second < 10) {
+        second = "0" + second
+    }
+    if (mileSecond < 10) {
+        second = "00" + mileSecond
+    }
+    if (mileSecond < 100) {
+        second = "0" + mileSecond
+    }
+    time = `${year}-${month}-${day} ${hour}:${minute}:${second}.${mileSecond}` ;//获取时间信息
+    return time;
 }
-if (minute < 10) {
-    minute = "0" + minute
-}
-if (second < 10) {
-    second = "0" + second
-}
-if (mileSecond < 10) {
-    second = "00" + mileSecond
-}
-if (mileSecond < 100) {
-    second = "0" + mileSecond
-}
-let time = `${year}-${month}-${day} ${hour}:${minute}:${second}.${mileSecond}` //获取时间信息
 
 let list = []; //待写入字符缓冲区
 let sleep = true; //日志系统休眠开关
@@ -148,7 +150,7 @@ Object.prototype.loggerInFile = function (cx, data = '', ...args) { //修改对�
             extend = `  [ext] ${extend}`;
         }
     }
-    let strLog = `[${time}]  ` + ` ${data}` + `${extend}`;
+    let strLog = `[${getTime()}]  ` + ` ${data}` + `${extend}`;
     let content = strLog + "\r\n";
     switch (cx) { //根据不同的日志等在控制台打印不同的颜色的日志信息
         case 0:

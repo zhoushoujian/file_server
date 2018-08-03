@@ -12,73 +12,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1,user-scalable=no">
 
     <style>
+        body {
+            background-color: #F5F5D5;
+        }
         h2 {
             display: inline-block;
             margin-left: 100px;
         }
-
-        form {
-            display: inline-block;
-        }
-
         #container {
             display: block;
             margin-left: 100px;
             margin-top: 20px;
         }
-
+        #fileToUpload {
+            width: 249px;
+        }
         a {
             display: inline-block;
         }
-
         a:hover {
             color: red;
         }
-
         span {
             color: #f00;
             text-decoration: underline;
             margin-left: 5px;
             cursor: pointer
         }
-
         .file {
             font-size: 20px;
             margin-top: 10px;
         }
-
-        #frmUploader {
-            margin-left: 100px;
-            margin-top: 25px;
-        }
-
-        #progressNumber {
-            display: inline-block;
-            margin-left: 5px;
-            height: 21px;
-            line-height: 21px;
-        }
-
         .tips {
             margin: 15px 0 0 100px;
             font-weight: bold;
             color: #f00;
         }
-
         .button {
             padding-left: 100px;
         }
-
         #btn1 {
             margin-right: 50px;
         }
-
-        #btn2 {
-            margin-right: 50px;
-        }
-
         #progress {
             display: inline-block;
+        }
+        @media screen and (max-width:960px) {
+            #container {
+                display: block;
+                margin-left: 10px;
+                margin-top: 20px;
+                word-break: break-word;
+            }
+            #fileToUpload {
+                width: 65%;
+            }
         }
     </style>
     <script src="./fileServer/axios.js"></script>
@@ -228,9 +216,9 @@
     <input type="button" name="submit" id="btnSubmit" value="上传" onclick="upload()" />
     <div id='progress'></div>
 
-    <div class="button">
+    <!-- <div class="button">
         <input type="button" id="btn1" value="文件目录" onClick="openFolder()" />
-    </div>
+    </div> -->
     <!-- <div class="tips">严禁同时上传超过9个文件！</div> -->
 
     <div id="container"></div>
