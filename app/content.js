@@ -33,7 +33,7 @@ function getFileContent (req, res, filePath, extName) {
     let content = fs.readFileSync(filePath, 'binary');
     if (content) {
       console.log("content  下载文件")
-      res.writeHead(200, {'Content-Type': contentType});
+      res.writeHead(200, {"Content-Length": content.length,'Content-Type': contentType});
       res.write(content, 'binary');
       res.end();
     } else {
