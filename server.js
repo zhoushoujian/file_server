@@ -1,5 +1,6 @@
 //以非主线程的方式运行
-let cluster = require("cluster");
+let cluster = require("cluster"),
+    logger = require('./logger');
 let IS_RUNNING_AS_SERVER = process.mainModule.IS_RUNNING_AS_SERVER = require.main === module;
 if (IS_RUNNING_AS_SERVER && cluster.isMaster) {
     return function () {
@@ -31,8 +32,7 @@ let fs = require("fs"),
     util = require('util'),
     os = require("os"),
     setting = require('./app/setting'),
-    Render = require('./app/render'),
-    logger = require('./logger');
+    Render = require('./app/render');
 
 //获取ip地址
 var address
