@@ -91,7 +91,7 @@
             axios.get('http://192.168.1.101:2002/')
                 .then(function(res){
                     if(res.request.responseText){
-                        console.log("判断媒体服务器是否开启",res.request.responseText)
+                        // console.log("判断媒体服务器是否开启",res.request.responseText)
                         let clickHere = document.getElementById('here');
                         clickHere.addEventListener('click',function(){
                             window.location.href = 'http://192.168.1.101:2002';
