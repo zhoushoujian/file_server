@@ -63,6 +63,11 @@ let server = http.createServer(function (req, res) {
         res.write(content);
         res.end();
     } else if (req.url === "/Images" && req.method === "POST") {
+        let ip = req.headers['x-forwarded-for'] || req.ip || req.connection.remoteAddress || req.socket.remoteAddress || '';
+        if (ip.split(',').length > 0) {
+            ip = ip.split(',')[0]
+        }
+        logger.info(` 上传文件的访问者ip`, ip);
         //上传文件
         var files = [];
         var form = new formidable.IncomingForm();
@@ -133,12 +138,17 @@ let server = http.createServer(function (req, res) {
         if (ip.split(',').length > 0) {
             ip = ip.split(',')[0]
         }
-        logger.info(` 访问者ip`, ip);
+        logger.info(` ajax访问者ip`, ip);
         let content = fs.readdirSync(path.join(__dirname, "Images"));
         logger.debug(` server  反馈给ajax的请求`, content.length);
         res.write(content.toString());
         res.end();
     } else if (/delete/.test(req.url)) {
+        let ip = req.headers['x-forwarded-for'] || req.ip || req.connection.remoteAddress || req.socket.remoteAddress || '';
+        if (ip.split(',').length > 0) {
+            ip = ip.split(',')[0]
+        }
+        logger.info(` 删除文件的访问者ip`, ip);
         res.setHeader('Content-Type', 'text/plain;charset=UTF-8');
         let pathname = url.parse(req.url).pathname;
         filename = decodeURIComponent(pathname).split("/")[decodeURIComponent(pathname).split("/").length - 1];
@@ -154,7 +164,9 @@ let server = http.createServer(function (req, res) {
         } else {
             res.end('文件已删除');
         }
-    } else {
+    } else if (req.url === "/server.js" || req.url === "/Images/" || req.url === "/Images"){
+        res.end("403 forbidden");
+    }  else {
         //静态文件部署
         logger.debug(` server  处理静态文件`);
         const _render = new Render(req, res);
