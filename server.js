@@ -174,10 +174,10 @@ let server = http.createServer(function (req, res) {
     }
 });
 
-server.listen({
-    port: setting.port,
-    exclusive: true
-});
+// server.listen({
+//     port: setting.port,
+//     exclusive: true
+// });
 server.on('listening', function () {
     logger.info(`  服务启动成功,正在监听${setting.port}端口`);
     process.title = `服务启动成功--${address}-${setting.port}`;
