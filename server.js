@@ -67,7 +67,7 @@ if (cluster.isMaster) {
             //上传文件
             var files = [];
             var form = new formidable.IncomingForm();
-            form.multiples = true; //q启用多文件上传
+            form.multiples = true; //启用多文件上传
             form.maxFileSize = 1 * 1024 * 1024 * 1024; //限制上传最大文件为1GB
             form.on('file', function (filed, file) {
                 files.push([filed, file]);
