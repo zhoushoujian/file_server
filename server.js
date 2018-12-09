@@ -17,23 +17,23 @@ if (cluster.isMaster) {
     for (var i = 0; i < numCPUs; i++) {
         cluster.fork();
     }
-    cluster.on('listening', function (worker, address) {
+    cluster.on('listening', function(worker, address) {
         console.log('listening: worker ' + worker.process.pid + ', port: ' + address.port);
     });
-    cluster.on('online', function (worker) {
+    cluster.on('online', function(worker) {
         console.log('[master] ' + 'online: worker' + worker.id);
     });
-    cluster.on('disconnect', function (worker) {
+    cluster.on('disconnect', function(worker) {
         console.log('[master] ' + 'disconnect: worker' + worker.id);
     });
-    cluster.on('exit', function (worker, code, signal) {
+    cluster.on('exit', function(worker, code, signal) {
         console.warn('worker ' + worker.process.pid + ' died');
     });
 } else {
     //获取ip地址
     var address
     var networks = os.networkInterfaces()
-    Object.keys(networks).forEach(function (k) {
+    Object.keys(networks).forEach(function(k) {
         for (var kk in networks[k]) {
             if (networks[k][kk].family === "IPv4" && networks[k][kk].address !== "127.0.0.1") {
                 address = networks[k][kk].address;
@@ -44,7 +44,7 @@ if (cluster.isMaster) {
 
     let i = 0;
     //创建服务器
-    let server = http.createServer(function (req, res) {
+    let server = http.createServer(function(req, res) {
         res.setHeader("Access-Control-Allow-Origin", "*");
         res.setHeader("Access-Control-Allow-Origin", "*");
         res.setHeader('Access-Control-Allow-Methods', 'PUT, GET, POST, DELETE, OPTIONS');
@@ -69,9 +69,9 @@ if (cluster.isMaster) {
             var form = new formidable.IncomingForm();
             form.multiples = true; //启用多文件上传
             form.maxFileSize = 1 * 1024 * 1024 * 1024; //限制上传最大文件为1GB
-            form.on('file', function (filed, file) {
+            form.on('file', function(filed, file) {
                 files.push([filed, file]);
-            }).parse(req, function (err, fields, files) {
+            }).parse(req, function(err, fields, files) {
                 // logger.debug("fields", fields);
                 //logger.debug("files", files);
                 if (err) {
@@ -84,9 +84,10 @@ if (cluster.isMaster) {
                     let filesname = files.files.name;
                     let filesize = files.files.size;
                     logger.info(` 上传的是单文件`, filesname);
-                    if (!/\.exe$|\.apk$/gim.test(filesname)) {
-                        return res.end("非法类型的文件");
-                    } else if (/%|#/g.test(filesname)) {
+                    /*  if (!/\.exe$|\.apk$/gim.test(filesname)) {
+                         return res.end("非法类型的文件");
+                     } else  */
+                    if (/%|#/g.test(filesname)) {
                         return res.end("非法的文件名");
                     } else if (filesize > 1 * 1024 * 1024 * 1024) {
                         return res.end('文件大小超过1GB');
@@ -99,16 +100,17 @@ if (cluster.isMaster) {
                     let readStream = fs.createReadStream(files.files.path);
                     let writeStream = fs.createWriteStream("Images/" + filesname);
                     readStream.pipe(writeStream);
-                    readStream.on('end', function () {
+                    readStream.on('end', function() {
                         fs.unlinkSync(files.files.path);
                     });
                 } else {
                     logger.debug(`  上传的是多文件`);
                     for (let i = 0; i < filesnum; i++) {
                         logger.debug(`  上传的文件名`, filesArray[i].name);
-                        if (!/\.exe$|\.apk$/gim.test(filesArray[i].name)) {
+                        /* if (!/\.exe$|\.apk$/gim.test(filesArray[i].name)) {
                             return res.end("非法类型的文件");
-                        } else if (/%|#/g.test(filesArray[i].name)) {
+                        } else  */
+                        if (/%|#/g.test(filesArray[i].name)) {
                             return res.end("非法的文件名");
                         } else if (filesArray[i].size > 1 * 1024 * 1024 * 1024) {
                             return res.end('文件大小超过1GB');
@@ -118,7 +120,7 @@ if (cluster.isMaster) {
                         let readStream = fs.createReadStream(files.files[i].path);
                         let writeStream = fs.createWriteStream("Images/" + filesArray[i].name);
                         readStream.pipe(writeStream);
-                        readStream.on('end', function () {
+                        readStream.on('end', function() {
                             fs.unlinkSync(files.files[i].path);
                         });
                     }
@@ -150,7 +152,7 @@ if (cluster.isMaster) {
             filename = decodeURIComponent(pathname).split("/")[decodeURIComponent(pathname).split("/").length - 1];
             logger.debug(` server delete filename`, filename);
             if (fs.existsSync(`./Images/${filename}`)) {
-                fs.unlink(`./Images/${filename}`, function (err) {
+                fs.unlink(`./Images/${filename}`, function(err) {
                     if (err) {
                         throw err
                     }
@@ -173,7 +175,7 @@ if (cluster.isMaster) {
     server.listen({
         port: setting.port
     });
-    server.on('listening', function () {
+    server.on('listening', function() {
         logger.info(`  服务启动成功,正在监听${setting.port}端口`);
         process.title = `服务启动成功--${address}-${setting.port}`;
     });
