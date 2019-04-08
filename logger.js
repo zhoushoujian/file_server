@@ -1,19 +1,43 @@
- /*
- * @Author: zhoushoujian 
- * @Date: 2018-04-16 20:13:31 
- * @Last Modified by: zhoushoujian
- * @Last Modified time: 2018-08-03 22:24:55
- * @用法:在任何一个脚本里都可以直接引用，
- *       当文件大小超过1M，文件自动分片，用法如下:
- *       logger.debug("debug","arg1","arg2",["arg3","arg4"])   //[2018-4-18 09:50:07.358][DEBUG][ACTION] debug  [ext] "arg1","arg2",["arg3","arg4"]
- *       logger.info("info",[1,2,3])                           //[2018-4-18 09:50:07.358][INFO][ACTION] info  [ext] [1,2,3]
- *       logger.warn("warn",null,[4,5,6])                      //[2018-4-18 09:50:07.358][WARN][ACTION] warn  [ext] null,[4,5,6]
- *       logger.error("error","123","456")                     //[2018-4-18 09:50:07.358][ERROR][ACTION] error  [ext] "123","456"
- */
-let fs = require('fs');
-require('colors');
-let time;
-function getTime (){
+//made by zhoushoujian on 2018/12/13
+let fs = require('fs'),
+    time,
+    LOG_FILE_MAX_SIZE = 1024 * 1024 * 5,
+    LOGGER_LEVEL = ["debug", "info", "warn", "error"],
+    list = [],
+    flag = true;
+
+//自定义控制台颜色输出
+{
+    let colors = {
+        Reset: "\x1b[0m",
+        FgRed: "\x1b[31m",
+        FgGreen: "\x1b[32m",
+        FgYellow: "\x1b[33m",
+        FgBlue: "\x1b[34m"
+    };
+    "debug:debug:FgBlue,info::FgGreen,warn:警告:FgYellow,error:error:FgRed".split(",").forEach(function (logcolor) {
+        let [log, info, color] = logcolor.split(':');
+        let logger = function (...args) {
+            var m = args.slice(1, args.length - 1).map(function(s){
+                return JSON.stringify(s,function(k,v){
+                    if (typeof v === 'function') {
+                        return Function.prototype.toString.call(v)
+                    } else {
+                        for (var i in v) {
+                            var p = v[i];
+                            v[i] = p instanceof Function ? String(p) : p;
+                        }
+                        return v;
+                    }
+                },4)
+            });
+            process.stdout.write(args[0] + m + args[args.length - 1] + '\n\n')
+        } || console[log] || console.log;
+        console[log] = (...args) => logger.apply(null, [`${colors[color]}[${getTime()}] [${info.toUpperCase()||log.toUpperCase()}]${colors.Reset} `, ...args, colors.Reset]);
+    });
+}
+
+function getTime() {
     let year = new Date().getFullYear();
     let month = new Date().getMonth() + 1;
     let day = new Date().getDate();
@@ -36,68 +60,52 @@ function getTime (){
     if (mileSecond < 100) {
         second = "0" + mileSecond
     }
-    time = `${year}-${month}-${day} ${hour}:${minute}:${second}.${mileSecond}` ;//获取时间信息
+    time = `${year}-${month}-${day} ${hour}:${minute}:${second}.${mileSecond}`;
     return time;
 }
 
-let list = []; //待写入字符缓冲区
-let sleep = true; //日志系统休眠开关
-let LOG_FILE_MAX_SIZE = 1024 * 1024 * 5 //日志文件分片大小
-let LOG_LEVEL_TYPES = ["debug", "info", "warn", "error"]; //log的等级类型
-
 function doLogInFile(buffer) {
     buffer && list.push(buffer);
-    sleep && activate();
+    flag && activate();
 }
-//激活日志系统
+
 function activate() {
-    sleep = false;
+    flag = false;
     let buffer = list.shift();
-    excute(buffer).then(
-        function () {
-            if (list.length > 0) {
-                activate();
-            } else {
-                sleep = true;
-            }
-        },
-        function () {
-            sleep = true;
-        }
-    );
+    execute(buffer).then(() => new Promise(res => {
+        list.length ? activate() : flag = true;
+        res();
+    }).catch(err => {
+        flag = true;
+        console.error('An error hanppened after execute', err);
+    }));
 }
-// 执行，需要返回Promise
-function excute(buffer) {
-    return new Promise((resolve, reject) => {
-        checkFileState()
-            .then(() => writeFile(buffer))
-            .then(resolve);
-    });
+
+function execute(buffer) {
+    return checkFileState()
+        .then(() => writeFile(buffer))
+        .catch(err => console.error('an error hanppend when excute', err))
 }
-//检查文件状态
+
 function checkFileState() {
-    return new Promise((resolve, reject) => {
-        fs.stat("/server.log", function (err, stats) {
-            if (err) {
-                if (!fs.existsSync("./server.log")) {
-                    fs.appendFile("./server.log");
-                }
+    return new Promise((resolve) => {
+        fs.stat("./server.log", function (err, stats) {
+            if (!fs.existsSync("./server.log")) {
+                fs.appendFileSync("./server.log");
                 resolve();
             } else {
-                console.log(stats.size)
                 checkFileSize(stats.size)
                     .then(resolve)
-                    .catch(resolve);
             }
         });
     });
 }
-//检查日志文件大小
+
 function checkFileSize(size) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
         if (size > LOG_FILE_MAX_SIZE) {
             fs.readdir("/", (err, files) => {
-                if (err) throw err
+                if (err) throw err;
                 let fileList = files.filter(function (file) {
                     return /^server[0-9]*\.log$/i.test(file);
                 });
@@ -107,18 +115,18 @@ function checkFileSize(size) {
                         fs.unlinkSync("/" + fileList[i - 1]);
                         continue;
                     }
-                    fs.renameSync("/" + fileList[i - 1], "server" + i + ".log"); //遍历更改日志文件名
+                    fs.renameSync("/" + fileList[i - 1], "server" + i + ".log");
+                    resolve();
                 }
             });
-            resolve();
         } else {
             resolve();
         }
     });
 }
-//写入日志文件
+
 function writeFile(buffer) {
-    return new Promise(function (res, rej) {
+    return new Promise(function (res) {
         fs.writeFileSync("server.log", buffer, {
             flag: "a+" //	以读取追加模式打开文件，如果文件不存在则创建。
         });
@@ -131,52 +139,38 @@ function writeFile(buffer) {
  * @param {*} InitLogger
  */
 function InitLogger() {
-    // console.log("初始化日志系统   ok".green)
+    //  console.info("初始化日志系统   ok");
 }
-Object.prototype.loggerInFile = function (cx, data = '', ...args) { //修改对象的顶层原型方法
-    let extend = ""
-    //console.log(args.length)
+
+function loggerInFile(level, data, ...args) {
+    console[level].apply(this, Array.prototype.slice.call(arguments).slice(1));
+    let extend = "";
     if (args.length) {
-        extend = args.map(s => JSON.stringify(s, function (p, o) { //遍历扩展运算符
-            for (var k in o) {
-                var v = o[k];
-                o[k] = v instanceof Array ? String(v) : v
+        extend = args.map(s => JSON.stringify(s, function (p, o) {
+            if (typeof o === 'function') {
+                return Function.prototype.toString.call(o)
+            } else {
+                for (var k in o) {
+                    var v = o[k];
+                    o[k] = v instanceof Function ? String(v) : v;
+                }
+                return o;
             }
-            return o;
         }, 4));
         if (extend) {
             extend = `  [ext] ${extend}`;
         }
     }
-    let strLog = `[${getTime()}]  ` + ` ${data}` + `${extend}`;
-    let content = strLog + "\r\n";
-    switch (cx) { //根据不同的日志等在控制台打印不同的颜色的日志信息
-        case 0:
-            console.log(strLog)
-            break;
-        case 1:
-            console.info(strLog.green)
-            break;
-        case 2:
-            console.warn(strLog.yellow)
-            break;
-        case 3:
-            console.error(strLog.red.bold)
-            break;
-    }
-    doLogInFile(content);
-}
-InitLogger.prototype.debug = function (data, ...args) { //debug等级的日志
-    loggerInFile(0, data, ...args);
-}
-InitLogger.prototype.info = function (data, ...args) { //info等级的日志
-    loggerInFile(1, data, ...args);
-}
-InitLogger.prototype.warn = function (data, ...args) { //warn等级的日志
-    loggerInFile(2, data, ...args);
-}
-InitLogger.prototype.error = function (data, ...args) { //error等级的日志
-    loggerInFile(3, data, ...args);
+    data = Object.prototype.toString.call(data) === '[object Object]' ? JSON.stringify(data) : data;
+    let content = `${data}` + `${extend}` + "\r\n";
+    this.time = getTime;
+    doLogInFile(`[${this.time()}]  [${level.toUpperCase()}]  ${content}`);
 }
 
-module.exports = logger = new InitLogger(); //实例化日志函数\
+LOGGER_LEVEL.reduce(function (total, level, cx) {
+    InitLogger.prototype[level] = function (data, ...args) {
+        loggerInFile(level, data, ...args);
+    }
+}, [])
+
+module.exports = logger = new InitLogger();
