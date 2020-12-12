@@ -3,7 +3,7 @@
  */
 
 // 页面类型
-let mimes = {
+const mimes = {
   'css': 'text/css',
   'less': 'text/css',
   'gif': 'image/gif',
@@ -26,18 +26,18 @@ let mimes = {
 };
 
 // 缓存文件
-let Expires = {
+const Expires = {
   fileMatch: /^(gif|png|jpg|js|css)$/ig,
   maxAge: 60 * 60 * 24 * 365
 };
 
 // 压缩文件
-let Compress = {
+const Compress = {
   match: /css|js|html/ig
 };
 
 module.exports = {
-  mimes: mimes,
-  Expires: Expires,
-  Compress: Compress
+  mimes,
+  Expires,
+  Compress
 };

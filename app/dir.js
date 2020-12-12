@@ -15,7 +15,7 @@ function dir (req, res) {
   }
   pathResolve = pathResolve + pathname;
 
-  let files = walk(pathResolve);
+  const files = walk(pathResolve);
   let html = '<ul>';
   if (pathname.substr(pathname.length - 1, 1) !== '/') {
     pathname = pathname + '/';

@@ -2,11 +2,11 @@
  * 访问渲染处理
  */
 
+const fs = require('fs');
 const fileInfo = require('./info');
 const fileContent = require('./content');
 const setting = require('./setting');
 const dir = require('./dir');
-const fs = require('fs');
 
 module.exports = class Render {
   constructor(req, res) {
@@ -16,21 +16,21 @@ module.exports = class Render {
 
   init() {
     try {
-      let that = this;
-      let fileInfoObj = fileInfo(that.req, that.res, setting.workspace);
-      let exist = fs.existsSync(fileInfoObj.filePath);
+      const that = this;
+      const fileInfoObj = fileInfo(that.req, that.res, setting.workspace);
+      const exist = fs.existsSync(fileInfoObj.filePath);
       // 如果文件不存在
       if (!exist) {
-        console.log("render  文件不存在!")
+        console.log("render  文件不存在!");
         that.res.writeHead(404, {
           'Content-Type': 'text/plain'
         });
         that.res.write('Not Found');
         that.res.end();
-        return
+        return;
       } else {
         // 判断访问地址是文件夹还是文件
-        let stat = fs.statSync(fileInfoObj.filePath);
+        const stat = fs.statSync(fileInfoObj.filePath);
 
         if (stat.isDirectory()) {
           // 如果为文件夹，则渲染文件夹目录
@@ -50,7 +50,7 @@ module.exports = class Render {
         }
       }
     } catch (e) {
-      console.error(e)
+      console.error(e);
     }
   }
 };
