@@ -107,19 +107,19 @@
   <script>
     const host = 'http://localhost'
     window.host = host
-    window.onload = function () {
-      return axios.get(`${host}:2002/`)
-        .then(function (res) {
-          if (res.request.responseText) {
-            // console.log("判断媒体服务器是否开启",res.request.responseText)
-            const clickHere = document.getElementById('here');
-            clickHere.setAttribute("href", `${host}:2002/`);
-          }
-        })
-        .catch(function () {
-          document.getElementById('tips').innerHTML = "媒体服务器没有开启！"
-        })
-    }
+    // window.onload = function () {
+    //   return axios.get(`${host}:2002/`)
+    //     .then(function (res) {
+    //       if (res.request.responseText) {
+    //         // console.log("判断媒体服务器是否开启",res.request.responseText)
+    //         const clickHere = document.getElementById('here');
+    //         clickHere.setAttribute("href", `${host}:2002/`);
+    //       }
+    //     })
+    //     .catch(function () {
+    //       document.getElementById('tips').innerHTML = "媒体服务器没有开启！"
+    //     })
+    // }
 
     function upload() { //进行文件类型的校验
       const files = document.getElementById('fileToUpload').files;
@@ -224,9 +224,9 @@
         let spansLength = spans.length;
         for (let i = 0; i < spansLength; i++) {
           spans[i].addEventListener('click', function () {
-            console.log(`delete: ${host}:2000/delete/${as[i + 1].innerHTML}`)
+            console.log(`delete: ${host}:2000/delete/${as[i].innerHTML}`)
             if (window.confirm("确定要删除吗?")) {
-              return axios.get(`${host}:2000/delete/${as[i + 1].innerHTML}`)
+              return axios.get(`${host}:2000/delete/${as[i].innerHTML}`)
                 .then(response => {
                   console.log("删除文件的响应", response);
                   if (response.request.responseText === '文件已删除') {
@@ -263,9 +263,9 @@
   <input type="button" name="submit" id="btnSubmit" value="上传" onclick="upload()" />
   <div id='progress'></div>
   <div class="warning">可以上传任意文件,但单文件大小不得超过1GB!</div>
-  <div id="tips">如果需要上传媒体文件，请点击
+  <!-- <div id="tips">如果需要上传媒体文件，请点击
     <a id="here" href="">这里</a>
-  </div>
+  </div> -->
   <div id="container"></div>
 
 </body>

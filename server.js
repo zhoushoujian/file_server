@@ -22,6 +22,10 @@ Object.keys(networks).forEach(function (k) {
   }
 });
 
+if (!fs.existsSync(path.join(__dirname, "Images"))) {
+  fs.mkdirSync(path.join(__dirname, "Images"))
+}
+
 let i = 0;
 //创建服务器
 const server = http.createServer(function (req, res) {
